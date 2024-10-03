@@ -9,41 +9,39 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
 ) {
-  if (req.method === "POST") {
-    const { name, phone } = req.body;
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Метод не разрешен." });
+  }
 
-    const token = "8113757758:AAEE1Iney-VpfLKkxc6lSEd0bFvNU78uGZA";
-    const chat_id = "229432828";
-    const text = `Имя: ${name}\nТелефон: ${phone}`;
+  const { name, phone } = req.body;
 
-    try {
-      const telegramRes = await fetch(
-        `https://api.telegram.org/bot${token}/sendMessage`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            chat_id: chat_id,
-            text: text,
-          }),
-        }
-      );
+  if (!name || !phone) {
+    return res.status(400).json({ error: "Имя и телефон обязательны." });
+  }
 
-      const data = await telegramRes.json();
-
-      if (data.ok) {
-        res.status(200).json({ message: "Сообщение успешно отправлено!" });
-      } else {
-        res
-          .status(500)
-          .json({ error: "Ошибка отправки сообщения в Telegram." });
+  try {
+    const response = await fetch(
+      "https://poryadokbyyu-production.up.railway.app/submit_form",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, phone }),
       }
-    } catch (error) {
-      res.status(500).json({ error: "Ошибка: " + (error as Error).message });
+    );
+
+    if (response.ok) {
+      return res.status(200).json({ message: "Заявка успешно отправлена!" });
+    } else {
+      const errorText = await response.text();
+      console.error("Ошибка сервера:", errorText);
+      return res.status(response.status).json({
+        error: `Ошибка отправки заявки. Код ошибки: ${response.status}`,
+      });
     }
-  } else {
-    res.status(405).json({ message: "Метод не разрешен." });
+  } catch (error) {
+    console.error("Ошибка при отправке запроса:", error);
+    return res.status(500).json({ error: "Внутренняя ошибка сервера." });
   }
 }
