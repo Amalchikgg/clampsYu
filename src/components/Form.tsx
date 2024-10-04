@@ -11,7 +11,7 @@ type FormData = {
 const Form = () => {
   const [formData, setFormData] = useState<FormData>({
     name: "",
-    phone: "",
+    phone: "+998 ",
   });
 
   const [status, setStatus] = useState<string>("");
